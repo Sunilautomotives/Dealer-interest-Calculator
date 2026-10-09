@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interest Calculator</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1d2330; --muted:#647089; --line:#e2e6ee;
+  --accent:#1f5fbf; --accent-ink:#ffffff; --accent-soft:#e8f0fc;
+  --good:#16794a; --bad:#b42318; --bad-soft:#fdecea; --head:#f0f3f8; --total:#fff7e0;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12151b; --card:#1b2029; --ink:#e7eaf0; --muted:#98a2b8; --line:#2c3340;
+    --accent:#6ea2ff; --accent-ink:#0d1420; --accent-soft:#1f2b40;
+    --good:#4fc28a; --bad:#ff8a80; --bad-soft:#3a2224; --head:#232a36; --total:#33301f;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+header{padding:18px 20px 10px;max-width:1400px;margin:auto}
+h1{margin:0;font-size:22px}
+header p{margin:4px 0 0;color:var(--muted)}
+main{max-width:1400px;margin:auto;padding:0 20px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:14px}
+.card h2{margin:0 0 12px;font-size:15px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.step b.n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;margin-right:6px}
+.btn{appearance:none;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:8px 14px;border-radius:7px;font:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink);padding:7px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi span{display:block;font-size:12px;color:var(--muted)}
+.kpi b{font-size:22px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:7px;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
+.toolbar > div{min-width:200px}
+.tablewrap{overflow:auto;max-height:65vh;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:max-content;min-width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:5px 8px;white-space:nowrap}
+th{background:var(--head);position:sticky;top:0;z-index:2;text-align:center}
+thead tr:nth-child(2) th{top:29px}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+td.z{color:var(--muted)}
+tr.tot td{background:var(--total);font-weight:700;position:sticky;bottom:0}
+tbody tr:hover td{background:var(--accent-soft)}
+.err{color:var(--bad)}
+.note{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;background:var(--bad-soft);color:var(--bad)}
+.hidden{display:none}
+details summary{cursor:pointer;font-weight:600}
+code{background:var(--head);padding:1px 5px;border-radius:4px}
+/* ---------- print ---------- */
+.printhead{display:none}
+@page{size:A4 landscape;margin:9mm 8mm 11mm 8mm;
+  @bottom-left{content:"Vehicle Interest Report";font:8pt "Segoe UI",Arial,sans-serif;color:#666}
+  @bottom-right{content:"Page " counter(page) " of " counter(pages);font:8pt "Segoe UI",Arial,sans-serif;color:#666}}
+@media print{
+  :root{--bg:#fff;--card:#fff;--ink:#000;--muted:#444;--line:#9aa3b2;--head:#e4e9f2;--total:#fff1c2;--accent-soft:transparent}
+  html,body{background:#fff!important;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body > header, .noprint{display:none!important}
+  main{max-width:none;padding:0}
+  #results{display:block!important}
+  .printhead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:6px}
+  .printhead h1{font-size:15pt;margin:0}
+  .printhead .sub{font-size:9pt;margin-top:2px}
+  .printhead .meta{font-size:8pt;text-align:right;color:#333}
+  .kpis{grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 6px!important}
+  .kpi{padding:4px 8px;border-radius:4px;break-inside:avoid}
+  .kpi span{font-size:7.5pt}.kpi b{font-size:11pt}
+  .card{border:0;padding:0;margin:0}
+  #periodNote{display:none}
+  .tablewrap{max-height:none;overflow:visible;border:0;border-radius:0}
+  table{font-size:7.5pt;width:100%;min-width:0;border-left:1px solid var(--line);border-top:1px solid var(--line)}
+  th,td{padding:2px 3px;position:static!important}
+  th{font-size:7pt}
+  thead{display:table-header-group}
+  tr{break-inside:avoid}
+  tr.tot td{position:static}
+  td.z{color:#999}
+  .ph{display:none}
+}
+body.printmode table{font-size:7.5pt}
+body.printmode th, body.printmode td{padding:2px 3px}
+body.printmode .ph{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Vehicle Interest Calculator</h1>
+  <p>Day-wise interest from Allocate Date to Sale Date — month-wise and dealer-wise.</p>
+</header>
+<main>
+
+<section class="card noprint">
+  <h2>How to use</h2>
+  <div class="steps">
+    <div class="step">
+      <p><b class="n">1</b>Download the template CSV</p>
+      <button class="btn ghost" id="dlTemplate">Download Template CSV</button>
+      <p class="note">Dates must be <code>DD-MM-YYYY</code> (e.g. 01-10-2026) or <code>DD-Mon-YYYY</code> (e.g. 01-Oct-2026). Files with any other date format are rejected. Vehicle Price can be left blank. The template has one filled <b>SAMPLE</b> row for reference; it is ignored automatically on upload.<br>Tip: in Excel, select the date columns → Format Cells → Custom → <code>dd-mm-yyyy</code>, then Save As CSV.</p>
+    </div>
+    <div class="step">
+      <p><b class="n">2</b>Upload the filled CSV</p>
+      <div class="drop" id="drop">Drop the CSV here or <u>click to browse</u><input type="file" id="file" accept=".csv,text/csv" class="hidden"></div>
+      <p class="note" id="fileInfo">No file loaded yet.</p>
+    </div>
+    <div class="step">
+      <p><b class="n">3</b>Choose the period, view and download reports</p>
+      <p class="note">Results update instantly when settings change. Everything runs in your browser; no data is uploaded anywhere.</p>
+    </div>
+  </div>
+</section>
+
+<section class="card noprint hidden" id="upErr" style="border-color:var(--bad);background:var(--bad-soft)"></section>
+
+<section class="card noprint">
+  <h2>Settings</h2>
+  <div class="grid">
+    <div>
+      <label>Period type</label>
+      <div class="seg" id="modeSeg"><button data-m="fy" class="on">Financial Year</button><button data-m="custom">Custom dates</button></div>
+    </div>
+    <div id="fyBox"><label for="fy">Financial Year (Apr–Mar)</label><select id="fy"></select></div>
+    <div id="fromBox" class="hidden"><label for="from">From date</label><input type="date" id="from"></div>
+    <div id="toBox" class="hidden"><label for="to">To date</label><input type="date" id="to"></div>
+    <div><label for="asOn">As on date (for unsold vehicles)</label><input type="date" id="asOn"></div>
+    <div><label for="rate">Interest rate (%)</label><input type="number" id="rate" step="0.001" value="1.5"></div>
+    <div><label for="rateUnit">Rate applies</label><select id="rateUnit"><option value="day">Per day</option><option value="month" selected>Per month (on 30 days)</option><option value="year">Per year (on 365 days)</option></select></div>
+    <div><label for="saleIncl">Day counting</label><select id="saleIncl"><option value="1" selected>Include sale date</option><option value="0">Exclude sale date (old sheet method)</option></select></div>
+    <div><label for="pDefault">Default price (₹)</label><input type="number" id="pDefault" value="100000"></div>
+    <div><label for="pUrbane">Urbane price (₹)</label><input type="number" id="pUrbane" value="120000"></div>
+    <div><label for="urbKey">Urbane model keyword</label><input type="text" id="urbKey" value="2443 Urbane"></div>
+    <div style="grid-column:1/-1"><p class="note" id="rateHint" style="margin:0"></p></div>
+  </div>
+  <details style="margin-top:12px">
+    <summary>Calculation rules</summary>
+    <ul class="note">
+      <li><b>End date</b> = Sales Date (or Sales Date − 1 day if "Exclude sale date" is chosen). If Sales Date is blank (vehicle in stock), the <b>As on date</b> is used.</li>
+      <li><b>Days</b> = Allocate Date to New Sale Date, both days included. Only days inside the selected period are counted, split by month.</li>
+      <li><b>Vehicle Price</b> = the price in the CSV if given; otherwise the Urbane price if the model contains the Urbane keyword, else the Default price.</li>
+      <li><b>Interest</b> for each month = (Vehicle Price × Rate% ÷ 30) × Days in that month. Default 1.5% per month, same as the sheet formula <code>(($J × 0.015) / 30) × Days</code>. (Per day: Price × Rate% × Days; Per year: Price × Rate% ÷ 365 × Days.)</li>
+      <li>Example: Allotment 01-10-2026, Sale 08-10-2026, Price ₹1,00,000, 1.5% per month → (₹1,00,000 × 0.015 ÷ 30) × 8 = ₹50 × 8 = <b>₹400</b>. Urbane ₹1,20,000 → ₹60 × 8 = ₹480.</li><li>Across months: Allotment 18-06-2025, Sale 09-07-2025 → June 13 days + July 9 days = 22 days, each month charged separately.</li>
+    </ul>
+  </details>
+</section>
+
+<section id="results" class="hidden">
+  <div class="printhead">
+    <div><h1 id="phTitle">Vehicle Interest Report</h1><div class="sub" id="phSub"></div></div>
+    <div class="meta" id="phMeta"></div>
+  </div>
+  <div class="kpis" style="margin-top:14px">
+    <div class="kpi"><span>Vehicles with interest</span><b id="kVeh">0</b></div>
+    <div class="kpi"><span>Dealers</span><b id="kDeal">0</b></div>
+    <div class="kpi"><span>Total interest days</span><b id="kDays">0</b></div>
+    <div class="kpi"><span>Total interest</span><b id="kInt">₹0</b></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs noprint" id="tabs">
+      <button data-t="dealer" class="on">Dealer-wise summary</button>
+      <button data-t="detail">Single dealer vehicles</button>
+      <button data-t="vehicle">All vehicles</button>
+      <button data-t="errors">Errors <span class="badge" id="errCount">0</span></button>
+    </div>
+    <div class="toolbar noprint">
+      <div id="dealerPick" class="hidden"><label for="dealerSel">Select dealer</label><select id="dealerSel"></select></div>
+      <div id="searchBox"><label for="q">Search (chassis / dealer / model / customer)</label><input id="q" placeholder="Type to search…"></div>
+      <div id="zeroBox"><label><input type="checkbox" id="hideZero" checked style="width:auto"> Only rows with interest</label></div>
+      <div style="min-width:0"><button class="btn" id="dlView">Download this report (CSV)</button></div>
+      <div style="min-width:0"><button class="btn ghost" id="printBtn">Print</button></div>
+    </div>
+    <p class="note" id="periodNote"></p>
+    <div class="tablewrap"><table id="tbl"></table></div>
+  </div>
+</section>
+
+</main>
+<script>
+(function(){
+"use strict";
+const DAY = 86400000;
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const TEMPLATE_HEADERS = ["Chassis","Stock Location","Location","Allocate Date","Model","Status","Customer Name","Sales Date","Vehicle Price"];
+const ALIASES = {
+  chassis:["chassis","chassis no","chassis no.","chassis number","vin"],
+  stock:["stock location","stock loc"],
+  location:["location","dealer","dealer name","store location","store locations"],
+  allocate:["allocate date","allocation date","allocated date","allocate"],
+  model:["model","model name"],
+  status:["status"],
+  remark:["customer name","customer","customer_name","remark","remarks"],
+  sale:["sales date","sale date","sold date","bill date","document date"],
+  price:["vehicle price","price"]
+};
+
+let rawRows = null, fileName = "";
+let mode = "fy", tab = "dealer";
+let result = null;
+
+const $ = id => document.getElementById(id);
+
+// ---------- dates (all as UTC day numbers) ----------
+function dnum(y,m,d){ return Math.floor(Date.UTC(y,m,d)/DAY); }
+function fromDnum(n){ const d=new Date(n*DAY); return {y:d.getUTCFullYear(),m:d.getUTCMonth(),d:d.getUTCDate()}; }
+function fmt(n){ if(n==null) return ""; const o=fromDnum(n); return String(o.d).padStart(2,"0")+"-"+String(o.m+1).padStart(2,"0")+"-"+o.y; }
+function isoToD(s){ if(!s) return null; const p=s.split("-"); return dnum(+p[0],+p[1]-1,+p[2]); }
+function dToIso(n){ const o=fromDnum(n); return o.y+"-"+String(o.m+1).padStart(2,"0")+"-"+String(o.d).padStart(2,"0"); }
+function validYMD(y,m,d){ if(y<100) y+=2000; if(m<0||m>11||d<1||d>31||y<1990||y>2100) return null; const n=dnum(y,m,d); const o=fromDnum(n); return (o.m===m&&o.d===d)?n:null; }
+// Accepted: DD-MM-YYYY (also / or .), DD-Mon-YYYY, DD-Mon-YY. Anything else is rejected.
+function checkDate(v){
+  let s=String(v??"").trim();
+  if(!s) return {err:"blank"};
+  let m;
+  if((m=s.match(/^(\d{2})[-\/.](\d{2})[-\/.](\d{4})$/))){
+    if(+m[2]>12) return {err:"month is "+m[2]+" (more than 12) — looks like MM-DD-YYYY. Use DD-MM-YYYY"};
+    const n=validYMD(+m[3],+m[2]-1,+m[1]); return n==null?{err:"not a real date"}:{n};
+  }
+  if((m=s.match(/^(\d{1,2})[-\/. ]([A-Za-z]{3,9})[-\/. ](\d{2}|\d{4})$/))){
+    const mi=MON.findIndex(x=>x.toLowerCase()===m[2].slice(0,3).toLowerCase());
+    if(mi<0) return {err:"unknown month name '"+m[2]+"'"};
+    const n=validYMD(+m[3],mi,+m[1]); return n==null?{err:"not a real date"}:{n};
+  }
+  if(/^\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}$/.test(s)) return {err:"day and month must be 2 digits with a 4-digit year (DD-MM-YYYY). Excel may have saved it as M/D/YYYY"};
+  if(/^\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}$/.test(s)) return {err:"year-first format (YYYY-MM-DD) is not allowed. Use DD-MM-YYYY"};
+  if(/^\d+(\.\d+)?$/.test(s)) return {err:"date saved as a number. Format the column as a date (DD-MM-YYYY) in Excel"};
+  return {err:"wrong format. Use DD-MM-YYYY"};
+}
+function parseDate(v){ const r=checkDate(v); return r.n??null; }
+
+// ---------- CSV ----------
+function parseCSV(text){
+  if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+  const first=text.split(/\r?\n/,1)[0]||"";
+  const delim=(first.split(";").length>first.split(",").length)?";":(first.split("\t").length>first.split(",").length?"\t":",");
+  const rows=[]; let row=[], f="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===delim){ row.push(f); f=""; }
+    else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n") i++; row.push(f); rows.push(row); row=[]; f=""; }
+    else f+=c;
+  }
+  if(f!==""||row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r=>r.some(x=>String(x).trim()!==""));
+}
+function csvCell(v){ v=v==null?"":String(v); return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function download(name, rows){
+  const txt="﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));
+  a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
+}
+
+// ---------- load ----------
+function mapHeaders(h){
+  const norm=h.map(x=>String(x).trim().toLowerCase().replace(/\s+/g," "));
+  const idx={};
+  for(const k in ALIASES){ idx[k]=norm.findIndex(x=>ALIASES[k].includes(x)); }
+  return idx;
+}
+function showUploadError(title, rows){
+  rawRows=null; result=null;
+  $("results").classList.add("hidden");
+  $("fileInfo").textContent="";
+  let h='<b>Upload failed: '+esc(title)+'</b>';
+  if(rows&&rows.length){
+    h+='<p style="margin:6px 0">Please correct these '+rows.length+' value(s) in your file and upload again. Allowed date formats: <code>DD-MM-YYYY</code> (e.g. 01-10-2026) or <code>DD-Mon-YYYY</code> (e.g. 01-Oct-2026).</p>'
+      +'<div class="tablewrap" style="max-height:260px"><table><thead><tr><th>CSV Line</th><th>Chassis</th><th>Column</th><th>Value in file</th><th>Problem</th></tr></thead><tbody>'
+      +rows.slice(0,500).map(r=>'<tr><td class="n">'+r[0]+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td><td class="err">'+esc(r[4])+'</td></tr>').join("")
+      +'</tbody></table></div>'+(rows.length>500?'<p class="note">Showing first 500. Download the list for all.</p>':'')
+      +'<p style="margin:8px 0 0"><button class="btn ghost" id="dlUpErr">Download error list (CSV)</button></p>';
+  }
+  $("upErr").innerHTML=h; $("upErr").classList.remove("hidden");
+  const btn=$("dlUpErr"); if(btn) btn.onclick=()=>download("Upload_Errors.csv",[["CSV Line","Chassis","Column","Value in file","Problem"],...rows]);
+}
+function loadText(text){
+  $("upErr").classList.add("hidden");
+  const rows=parseCSV(text);
+  if(rows.length<1) return showUploadError("the CSV file is empty.");
+  let hi=rows.findIndex(r=>r.some(x=>ALIASES.chassis.includes(String(x).trim().toLowerCase())));
+  if(hi<0) return showUploadError("no 'Chassis' column found. Please use the template CSV.");
+  const idx=mapHeaders(rows[hi]);
+  const missing=["chassis","location","allocate","sale"].filter(k=>idx[k]<0);
+  if(missing.length) return showUploadError("these columns are missing: "+missing.map(k=>({chassis:"Chassis",location:"Location",allocate:"Allocate Date",sale:"Sales Date"})[k]).join(", ")+".");
+  const g=(r,k)=> idx[k]>=0 ? String(r[idx[k]]??"").trim() : "";
+  const data=rows.slice(hi+1).map((r,i)=>({
+    line:hi+2+i, chassis:g(r,"chassis"), stock:g(r,"stock"), location:g(r,"location"),
+    allocateRaw:g(r,"allocate"), model:g(r,"model"), status:g(r,"status"), remark:g(r,"remark"),
+    saleRaw:g(r,"sale"), priceRaw:g(r,"price")
+  })).filter(r=>(r.chassis||r.location||r.allocateRaw||r.saleRaw)&&!/^sample/i.test(r.chassis));
+  if(!data.length) return showUploadError("no data rows found. Add your vehicles below the SAMPLE row (the SAMPLE row itself is ignored).");
+  // strict date validation
+  const bad=[];
+  for(const r of data){
+    const a=checkDate(r.allocateRaw);
+    if(a.err) bad.push([r.line,r.chassis,"Allocate Date",r.allocateRaw,a.err==="blank"?"Allocate Date is blank":a.err]);
+    if(r.saleRaw){ const s=checkDate(r.saleRaw); if(s.err) bad.push([r.line,r.chassis,"Sales Date",r.saleRaw,s.err]); }
+  }
+  if(bad.length) return showUploadError(bad.length+" date error(s) found in "+fileName+".", bad);
+  rawRows=data;
+  $("fileInfo").textContent="✓ "+fileName+" — "+rawRows.length+" rows loaded. All dates are valid.";
+  $("results").classList.remove("hidden");
+  compute();
+}
+function readFile(f){ if(!f) return; fileName=f.name; const r=new FileReader(); r.onload=e=>loadText(e.target.result); r.readAsText(f); }
+
+// ---------- rate ----------
+function dailyRate(){
+  const r=(parseFloat($("rate").value)||0)/100, u=$("rateUnit").value;
+  return u==="day"?r:(u==="month"?r/30:r/365);
+}
+function rateLabel(){ return $("rate").value+"% "+({day:"per day",month:"per month",year:"per year"})[$("rateUnit").value]; }
+function updateHint(){
+  const d=dailyRate(), p=parseFloat($("pDefault").value)||0, u=parseFloat($("pUrbane").value)||0;
+  $("rateHint").textContent="Interest per day: ₹"+money(p*d)+" on ₹"+p.toLocaleString("en-IN")+"  •  ₹"+money(u*d)+" on ₹"+u.toLocaleString("en-IN")
+    +"  •  e.g. 8 days on ₹"+p.toLocaleString("en-IN")+" = ₹"+money(8*p*d);
+}
+// ---------- compute ----------
+function getPeriod(){
+  if(mode==="fy"){ const y=+$("fy").value; return {from:dnum(y,3,1), to:dnum(y+1,2,31), label:"FY "+y+"-"+(y+1)}; }
+  const f=isoToD($("from").value), t=isoToD($("to").value);
+  if(f==null||t==null||t<f) return null;
+  return {from:f,to:t,label:fmt(f)+" to "+fmt(t)};
+}
+function monthsIn(p){
+  const out=[]; let o=fromDnum(p.from); let y=o.y, m=o.m;
+  while(true){
+    const s=dnum(y,m,1), e=dnum(y,m+1,1)-1;
+    if(s>p.to) break;
+    out.push({label:MON[m]+"-"+y, s:Math.max(s,p.from), e:Math.min(e,p.to)});
+    m++; if(m>11){m=0;y++;}
+  }
+  return out;
+}
+function compute(){
+  updateHint();
+  if(!rawRows) return;
+  const p=getPeriod();
+  if(!p){ $("periodNote").innerHTML='<span class="err">Please choose valid custom dates (To date must be on or after From date).</span>'; return; }
+  const asOn=isoToD($("asOn").value);
+  const rate=dailyRate(); const inclSale=$("saleIncl").value==="1";
+  const pDef=parseFloat($("pDefault").value)||0, pUrb=parseFloat($("pUrbane").value)||0;
+  const key=$("urbKey").value.trim().toLowerCase();
+  const months=monthsIn(p);
+  const vehicles=[], errors=[];
+  for(const r of rawRows){
+    if(!r.chassis && !r.location && !r.allocateRaw) continue;
+    const errs=[];
+    if(!r.chassis) errs.push("Chassis is blank");
+    if(!r.location) errs.push("Location is blank");
+    const a=parseDate(r.allocateRaw);
+    if(a==null) errs.push(r.allocateRaw?"Invalid Allocate Date: '"+r.allocateRaw+"'":"Allocate Date is blank");
+    let s=null;
+    if(r.saleRaw){ s=parseDate(r.saleRaw); if(s==null) errs.push("Invalid Sales Date: '"+r.saleRaw+"'"); }
+    if(a!=null && s!=null && s<a) errs.push("Sales Date is before Allocate Date");
+    let price=parseFloat(String(r.priceRaw).replace(/[₹,\s]/g,""));
+    if(!(price>0)) price=(key && r.model.toLowerCase().includes(key))?pUrb:pDef;
+    if(errs.length){ errors.push({line:r.line,chassis:r.chassis,location:r.location,msg:errs.join("; ")}); if(a==null||(r.saleRaw&&s==null)) continue; }
+    const newSale = s!=null ? (inclSale ? s : s-1) : asOn;
+    const per=months.map(mo=>{ const st=Math.max(a,mo.s), en=Math.min(newSale,mo.e); const d=Math.max(0,en-st+1); return {d, i:d*price*rate}; });
+    const td=per.reduce((x,y)=>x+y.d,0), ti=per.reduce((x,y)=>x+y.i,0);
+    vehicles.push({...r, a, s, newSale, price, per, td, ti});
+  }
+  // dealer summary (case-insensitive grouping, like SUMIFS)
+  const dmap=new Map();
+  for(const v of vehicles){
+    const k=v.location.toLowerCase().replace(/\s+/g," ");
+    if(!dmap.has(k)) dmap.set(k,{name:v.location, count:0, per:months.map(()=>({d:0,i:0})), td:0, ti:0});
+    const d=dmap.get(k); d.count++; v.per.forEach((x,j)=>{d.per[j].d+=x.d; d.per[j].i+=x.i;}); d.td+=v.td; d.ti+=v.ti;
+  }
+  const dealers=[...dmap.values()].sort((x,y)=>y.ti-x.ti||x.name.localeCompare(y.name));
+  result={p,months,vehicles,dealers,errors,asOn};
+  // dealer dropdown
+  const sel=$("dealerSel"), cur=sel.value;
+  sel.innerHTML=dealers.map(d=>'<option>'+esc(d.name)+'</option>').join("");
+  if(dealers.some(d=>d.name===cur)) sel.value=cur;
+  // KPIs
+  const withInt=vehicles.filter(v=>v.td>0);
+  $("kVeh").textContent=withInt.length.toLocaleString("en-IN");
+  $("kDeal").textContent=dealers.filter(d=>d.td>0).length.toLocaleString("en-IN");
+  $("kDays").textContent=sum(vehicles,"td").toLocaleString("en-IN");
+  $("kInt").textContent="₹"+money(sum(vehicles,"ti"));
+  $("errCount").textContent=errors.length;
+  $("periodNote").textContent="Period: "+p.label+"  •  As on date (unsold vehicles): "+fmt(asOn)+"  •  Rate: "+rateLabel();
+  render();
+}
+const sum=(a,k)=>a.reduce((x,y)=>x+y[k],0);
+function money(n){ return (Math.round(n*100)/100).toLocaleString("en-IN",{maximumFractionDigits:2}); }
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]); }
+
+// ---------- views ----------
+function viewData(){
+  const R=result, M=R.months, q=$("q").value.trim().toLowerCase(), hz=$("hideZero").checked;
+  const mHead=[]; M.forEach(m=>{mHead.push(m.label+" Days", m.label+" Interest");});
+  if(tab==="dealer"){
+    let list=R.dealers.filter(d=>(!hz||d.td>0)&&(!q||d.name.toLowerCase().includes(q)));
+    const head=["S No.","Location","Vehicles",...mHead,"Total Days","Total Interest"];
+    const rows=list.map((d,i)=>[i+1,d.name,d.count,...d.per.flatMap(x=>[x.d,x.i]),d.td,d.ti]);
+    const tot=["","TOTAL",sum(list,"count"),...M.flatMap((_,j)=>[list.reduce((a,d)=>a+d.per[j].d,0),list.reduce((a,d)=>a+d.per[j].i,0)]),sum(list,"td"),sum(list,"ti")];
+    return {head,rows,tot,numFrom:3,numExtra:[2],name:"Dealer_Summary",title:"Dealer-wise Interest Summary"};
+  }
+  if(tab==="vehicle"||tab==="detail"){
+    let list=R.vehicles;
+    if(tab==="detail"){ const dn=$("dealerSel").value.toLowerCase().replace(/\s+/g," "); list=list.filter(v=>v.location.toLowerCase().replace(/\s+/g," ")===dn); }
+    list=list.filter(v=>(!hz||v.td>0)&&(!q||(v.chassis+" "+v.location+" "+v.model+" "+v.remark).toLowerCase().includes(q)));
+    const head=["S No.","Chassis","Stock Location","Location","Allocate Date","Model","Status","Customer Name","Sales Date","Vehicle Price","End Date",...mHead,"Total Days","Total Interest"];
+    const rows=list.map((v,i)=>[i+1,v.chassis,v.stock,v.location,fmt(v.a),v.model,v.status,v.remark,v.s!=null?fmt(v.s):"",v.price,fmt(v.newSale),...v.per.flatMap(x=>[x.d,x.i]),v.td,v.ti]);
+    const tot=["","TOTAL ("+list.length+")","","","","","","","","","",...M.flatMap((_,j)=>[list.reduce((a,v)=>a+v.per[j].d,0),list.reduce((a,v)=>a+v.per[j].i,0)]),sum(list,"td"),sum(list,"ti")];
+    const nm=tab==="detail"?("Dealer_"+$("dealerSel").value.replace(/[^\w]+/g,"_")):"Vehicle_Wise";
+    return {head,rows,tot,numFrom:11,priceCol:9,name:nm,printHide:tab==="detail"?[2,3,6,7,10]:[2,6,7,10],title:tab==="detail"?"Dealer Report — "+$("dealerSel").value:"Vehicle-wise Interest Report"};
+  }
+  const list=R.errors.filter(e=>!q||(e.chassis+" "+e.location+" "+e.msg).toLowerCase().includes(q));
+  return {head:["CSV Line","Chassis","Location","Problem"],rows:list.map(e=>[e.line,e.chassis,e.location,e.msg]),tot:null,numFrom:99,name:"Errors",title:"Data Errors"};
+}
+function render(){
+  if(!result) return;
+  $("dealerPick").classList.toggle("hidden",tab!=="detail");
+  $("zeroBox").classList.toggle("hidden",tab==="errors");
+  const V=viewData(), M=result.months;
+  let h="<thead>";
+  if(V.numFrom<99){
+    const fixed=V.numFrom;
+    const ph=V.printHide||[];
+    h+="<tr>"+V.head.slice(0,fixed).map((x,j)=>'<th rowspan="2"'+(ph.includes(j)?' class="ph"':'')+'>'+esc(x)+"</th>").join("")
+      +M.map(m=>'<th colspan="2">'+m.label+"</th>").join("")+'<th colspan="2">Total</th></tr><tr>'
+      +M.map(()=>"<th>Days</th><th>Interest</th>").join("")+"<th>Days</th><th>Interest</th></tr>";
+  } else h+="<tr>"+V.head.map(x=>"<th>"+esc(x)+"</th>").join("")+"</tr>";
+  h+="</thead><tbody>";
+  $("phTitle").textContent=V.title;
+  $("phSub").textContent="Period: "+result.p.label+"   |   Rate: "+rateLabel()+"   |   Days: "+($("saleIncl").value==="1"?"sale date included":"sale date excluded")+"   |   As on date (unsold): "+fmt(result.asOn)+($("q").value.trim()?"   |   Filter: \""+$("q").value.trim()+"\"":"");
+  $("phMeta").innerHTML="Rows: "+V.rows.length+"<br>Printed: "+fmt(today)+(fileName?"<br>File: "+esc(fileName):"");
+  const cell=(x,j)=>{
+    if(j>=V.numFrom||j===V.priceCol||(V.numExtra||[]).includes(j)||(j===0&&V.numFrom<99)){
+      const isInt=j>=V.numFrom && ((j-V.numFrom)%2===1);
+      const t=typeof x==="number"?(isInt||j===V.priceCol?money(x):x.toLocaleString("en-IN")):esc(x);
+      return '<td class="n'+(x===0?" z":"")+'">'+t+"</td>";
+    }
+    return (V.printHide||[]).includes(j)?'<td class="ph">'+esc(x)+"</td>":"<td>"+esc(x)+"</td>";
+  };
+  if(!V.rows.length) h+='<tr><td colspan="'+V.head.length+'" class="note" style="text-align:center;padding:20px">'+(tab==="errors"?"No errors found.":"No rows match this filter.")+"</td></tr>";
+  const LIMIT=3000;
+  V.rows.slice(0,LIMIT).forEach(r=>{ h+="<tr>"+r.map(cell).join("")+"</tr>"; });
+  if(V.tot&&V.rows.length) h+='<tr class="tot">'+V.tot.map(cell).join("")+"</tr>";
+  h+="</tbody>";
+  $("tbl").innerHTML=h;
+  if(V.rows.length>LIMIT) $("periodNote").textContent+="  •  Showing the first "+LIMIT+" rows on screen; the CSV download contains all rows.";
+}
+function downloadView(){
+  if(!result) return;
+  const V=viewData();
+  const rows=[V.head,...V.rows.map(r=>r.map(x=>typeof x==="number"?Math.round(x*100)/100:x))];
+  if(V.tot&&V.rows.length) rows.push(V.tot.map(x=>typeof x==="number"?Math.round(x*100)/100:x));
+  const tag=mode==="fy"?("FY"+$("fy").value):(dToIso(result.p.from)+"_to_"+dToIso(result.p.to));
+  download(V.name+"_"+tag+".csv",rows);
+}
+
+// ---------- init ----------
+const today=Math.floor(Date.now()/DAY + (-new Date().getTimezoneOffset())/1440);
+$("asOn").value=dToIso(today);
+const t=fromDnum(today), curFY=t.m>=3?t.y:t.y-1;
+for(let y=curFY+1;y>=2020;y--){ const o=document.createElement("option"); o.value=y; o.textContent=y+"-"+(y+1); if(y===curFY) o.selected=true; $("fy").appendChild(o); }
+$("from").value=dToIso(dnum(curFY,3,1)); $("to").value=dToIso(today);
+
+$("dlTemplate").onclick=()=>download("Interest_Template.csv",[TEMPLATE_HEADERS,
+  ["SAMPLE-MD2B35302SAA66066","MCBU","Vaishnavi Automobiles","01-Oct-2026","Chetak Blue 3502","Sold","Ramesh Kumar","08-Oct-2026","100000"]]);
+const drop=$("drop"), file=$("file");
+drop.onclick=()=>file.click();
+file.onchange=e=>{ readFile(e.target.files[0]); file.value=""; };
+drop.ondragover=e=>{e.preventDefault();drop.classList.add("over");};
+drop.ondragleave=()=>drop.classList.remove("over");
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove("over");readFile(e.dataTransfer.files[0]);};
+$("modeSeg").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; mode=b.dataset.m;
+  [...$("modeSeg").children].forEach(x=>x.classList.toggle("on",x===b));
+  $("fyBox").classList.toggle("hidden",mode!=="fy"); $("fromBox").classList.toggle("hidden",mode==="fy"); $("toBox").classList.toggle("hidden",mode==="fy"); compute(); };
+["fy","from","to","asOn","rate","rateUnit","saleIncl","pDefault","pUrbane","urbKey"].forEach(id=>$(id).addEventListener("input",compute));
+$("tabs").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; tab=b.dataset.t; [...$("tabs").children].forEach(x=>x.classList.toggle("on",x===b)); render(); };
+$("q").addEventListener("input",render); $("hideZero").onchange=render; $("dealerSel").onchange=render;
+$("dlView").onclick=downloadView;
+updateHint();
+// Fit the table to A4 landscape width (approx. 281mm printable = 1062px)
+function fitForPrint(){
+  const t=$("tbl"); document.body.classList.add("printmode"); t.style.zoom="";
+  const w=t.scrollWidth, avail=1060;
+  t.style.zoom = w>avail ? (avail/w).toFixed(3) : "";
+}
+function endPrint(){ document.body.classList.remove("printmode"); $("tbl").style.zoom=""; }
+window.addEventListener("beforeprint",fitForPrint);
+window.addEventListener("afterprint",endPrint);
+$("printBtn").onclick=()=>{ fitForPrint(); window.print(); };
+window.__calc={loadText,compute,get result(){return result;},setMode:m=>{mode=m;}};
+})();
+</script>
+</body>
+</html>
